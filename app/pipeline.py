@@ -60,11 +60,11 @@ class QAPipeline:
         
         # 1. Supervisor Orchestrator Init
         supervisor = BaseAgent("Supervisor Orchestrator", self.tracker)
-        await supervisor.transition("Processing", "Initializing Q&A Pipeline execution...")
+        await supervisor.transition("Processing", "🤖 SPINNING UP SUPERVISOR ORCHESTRATOR & SYNCING SYSTEM CORES...")
 
         # 2. Ingestion Quality Evaluator
         ingestion_agent = BaseAgent("Ingestion Quality Evaluator", self.tracker)
-        await ingestion_agent.transition("Processing", "Validating file sizes and uploading...")
+        await ingestion_agent.transition("Processing", "⚙️ INGESTING RESOURCE ARTIFACTS AND SCREENING INTEGRITY...")
         
         # Enforce max 200MB limit & concurrency limit of 5 concurrent uploads
         semaphore = asyncio.Semaphore(5)
@@ -86,25 +86,25 @@ class QAPipeline:
             tasks = [process_single_file(p) for p in file_paths]
             extracted_texts = await asyncio.gather(*tasks)
             combined_text = "\n\n".join(extracted_texts)
-            await ingestion_agent.transition("Complete", f"Successfully ingested {len(file_paths)} files.")
+            await ingestion_agent.transition("Complete", f"⚙️ INGESTION COMPLETE. SUCCESSFULLY LOADED {len(file_paths)} KNOWLEDGE SOURCE(S).")
         except Exception as e:
-            await ingestion_agent.transition("Idle", f"Ingestion failed: {str(e)}")
-            await supervisor.transition("Idle", "Pipeline aborted due to ingestion error.")
+            await ingestion_agent.transition("Idle", f"❌ Ingestion failed: {str(e)}")
+            await supervisor.transition("Idle", "❌ Pipeline aborted due to ingestion error.")
             raise e
 
         # 3. Structural Chunking Planner
         chunker_agent = BaseAgent("Structural Chunking Planner", self.tracker)
-        await chunker_agent.transition("Processing", "Chunking document text...")
+        await chunker_agent.transition("Processing", "🧩 DISSECTING TEXT CORPUS INTO OPTIMAL SEMANTIC SEGMENTS...")
         
         loop = asyncio.get_running_loop()
         splitter = RecursiveCharacterTextSplitter(chunk_size=1200, chunk_overlap=200)
         
         try:
             chunks = await loop.run_in_executor(self.executor, splitter.split_text, combined_text)
-            await chunker_agent.transition("Complete", f"Text successfully divided into {len(chunks)} chunks.")
+            await chunker_agent.transition("Complete", f"🧩 DIVISION DONE. SYNTHESIZED {len(chunks)} WORK CONTEXTS.")
         except Exception as e:
-            await chunker_agent.transition("Idle", f"Chunking failed: {str(e)}")
-            await supervisor.transition("Idle", "Pipeline aborted due to chunking error.")
+            await chunker_agent.transition("Idle", f"❌ Chunking failed: {str(e)}")
+            await supervisor.transition("Idle", "❌ Pipeline aborted due to chunking error.")
             raise e
 
         if not chunks:
@@ -124,27 +124,27 @@ class QAPipeline:
         agent_c = BaseAgent("Item Gen Specialist C", self.tracker)
         
         async def run_specialist_a():
-            await agent_a.transition("Processing", f"Generating stems for first 1/3 of text ({len(chunks_a)} chunks)...")
+            await agent_a.transition("Processing", f"🏭 EXTRACTING Q&A STEM FACTS AND DEFINITIONS (PART 1 - {len(chunks_a)} chunks)...")
             qa = self._generate_stems_heuristically(chunks_a, section_name="Section A")
-            await agent_a.transition("Complete", f"Generated {len(qa)} stems from first 1/3 chunks.")
+            await agent_a.transition("Complete", f"🏭 GENERATION PHASE A SUCCESS. COMPILED {len(qa)} RAW STEMS.")
             return qa
 
         async def run_specialist_b():
             if not chunks_b:
-                await agent_b.transition("Complete", "No chunks allocated to Specialist B (too few chunks).")
+                await agent_b.transition("Complete", "🏭 Specialist B Idle (Text corpus too small for multi-thread slicing).")
                 return []
-            await agent_b.transition("Processing", f"Generating stems for middle 1/3 of text ({len(chunks_b)} chunks)...")
+            await agent_b.transition("Processing", f"🏭 EXTRACTING Q&A STEM FACTS AND DEFINITIONS (PART 2 - {len(chunks_b)} chunks)...")
             qa = self._generate_stems_heuristically(chunks_b, section_name="Section B")
-            await agent_b.transition("Complete", f"Generated {len(qa)} stems from middle 1/3 chunks.")
+            await agent_b.transition("Complete", f"🏭 GENERATION PHASE B SUCCESS. COMPILED {len(qa)} RAW STEMS.")
             return qa
 
         async def run_specialist_c():
             if not chunks_c:
-                await agent_c.transition("Complete", "No chunks allocated to Specialist C (too few chunks).")
+                await agent_c.transition("Complete", "🏭 Specialist C Idle (Text corpus too small for multi-thread slicing).")
                 return []
-            await agent_c.transition("Processing", f"Generating stems for final 1/3 of text ({len(chunks_c)} chunks)...")
+            await agent_c.transition("Processing", f"🏭 EXTRACTING Q&A STEM FACTS AND DEFINITIONS (PART 3 - {len(chunks_c)} chunks)...")
             qa = self._generate_stems_heuristically(chunks_c, section_name="Section C")
-            await agent_c.transition("Complete", f"Generated {len(qa)} stems from final 1/3 chunks.")
+            await agent_c.transition("Complete", f"🏭 GENERATION PHASE C SUCCESS. COMPILED {len(qa)} RAW STEMS.")
             return qa
 
         # Gather parallel item generation
@@ -158,7 +158,7 @@ class QAPipeline:
 
         # 7. Distractor Variation Designer
         distractor_agent = BaseAgent("Distractor Variation Designer", self.tracker)
-        await distractor_agent.transition("Processing", f"Designing {distractor_count} distractor choices (A-J labels)...")
+        await distractor_agent.transition("Processing", f"🎯 GENERATING HIGH-PLAUSIBILITY DISTRACTORS ({distractor_count} CHOICES)...")
         
         all_sentences = []
         for c in chunks:
@@ -202,11 +202,11 @@ class QAPipeline:
                 final_item[f"Option {chr(65 + i)}"] = opt_text
             final_qa_with_distractors.append(final_item)
             
-        await distractor_agent.transition("Complete", f"Designed distractors for {len(final_qa_with_distractors)} questions.")
-
+        await distractor_agent.transition("Complete", f"🎯 DISTRACTOR MAPPING COMPLETE FOR {len(final_qa_with_distractors)} QUESTIONS.")
+ 
         # 8. Deduplication Vector Analyzer
         dedup_agent = BaseAgent("Deduplication Vector Analyzer", self.tracker)
-        await dedup_agent.transition("Processing", "Computing TF-IDF + Cosine Similarity matrix for deduplication...")
+        await dedup_agent.transition("Processing", "🛡️ RUNNING COSIM VECTOR AUDIT & PRUNING DUPLICATIVE QA NODES...")
         
         deduped_qa = await loop.run_in_executor(
             self.executor,
@@ -218,12 +218,12 @@ class QAPipeline:
         dropped_count = len(final_qa_with_distractors) - len(deduped_qa)
         await dedup_agent.transition(
             "Complete",
-            f"Deduplication complete. Retained {len(deduped_qa)} questions (dropped {dropped_count} duplicates)."
+            f"🛡️ VECTOR DE-DUPLICATION COMPLETE. RETAINED {len(deduped_qa)} NOMINAL QUESTIONS (dropped {dropped_count} duplicates)."
         )
-
+ 
         # 9. Format Verification Auditor
         auditor_agent = BaseAgent("Format Verification Auditor", self.tracker)
-        await auditor_agent.transition("Processing", "Validating Polars DataFrame schema and formatting...")
+        await auditor_agent.transition("Processing", "🔍 AUDITING DATA MATRICES FOR SCHEMA AND OPTION COMPLIANCE...")
         
         # Pad, slice, and partition into sets
         total_needed = set_count * questions_per_set
@@ -267,7 +267,7 @@ class QAPipeline:
             for i, opt_text in enumerate(options_list):
                 final_fb[f"Option {chr(65 + i)}"] = opt_text
             formatted_fallbacks.append(final_fb)
-
+ 
         # Pad deduped_qa if we don't have enough questions
         while len(deduped_qa) < total_needed:
             # First try to pull from our formatted fallbacks
@@ -293,10 +293,10 @@ class QAPipeline:
                     for i in range(distractor_count):
                         new_item[f"Option {chr(65 + i)}"] = fallback_options[i]
             deduped_qa.append(new_item)
-
+ 
         # Slice to exactly total_needed
         deduped_qa = deduped_qa[:total_needed]
-
+ 
         # Partition questions into sets, resetting Question ID numbering for each set
         final_sets_qa = []
         for s_idx in range(set_count):
@@ -307,7 +307,7 @@ class QAPipeline:
                 question_item["Set"] = set_name
                 question_item["Question ID"] = str(q_idx + 1)
                 final_sets_qa.append(question_item)
-
+ 
         # Build Polars DataFrame
         try:
             # Prepare schema format dynamically including the option columns
@@ -325,15 +325,15 @@ class QAPipeline:
             df = pl.DataFrame(final_sets_qa, schema=schema_dict)
             
             # Flag/check layout ending string
-            await auditor_agent.transition("Complete", "Polars DataFrame schema is valid. Injected '--- END ---' flag.")
+            await auditor_agent.transition("Complete", "🔍 AUDIT COMPLETE. SCHEMA COMPLIANT. INJECTED SYSTEM BOUNDARY FLAG.")
         except Exception as e:
-            await auditor_agent.transition("Idle", f"Schema validation error: {str(e)}")
-            await supervisor.transition("Idle", "Pipeline aborted due to schema validation failure.")
+            await auditor_agent.transition("Idle", f"❌ Schema validation error: {str(e)}")
+            await supervisor.transition("Idle", "❌ Pipeline aborted due to schema validation failure.")
             raise e
-
+ 
         # 10. Package Cryptography Agent
         crypto_agent = BaseAgent("Package Cryptography Agent", self.tracker)
-        await crypto_agent.transition("Processing", "Exporting XLSX, PDF and creating password-protected ZIP...")
+        await crypto_agent.transition("Processing", "🔐 GENERATING REPORTLAB LAYOUTS & COMPILING ENCRYPTED ENVELOPE...")
         
         xlsx_path = os.path.join(output_dir, "questions.xlsx")
         zip_path = os.path.join(output_dir, "output.zip")
@@ -367,14 +367,14 @@ class QAPipeline:
                 True # Use legacy zipcrypto for multi-platform extraction tool support
             )
             
-            await crypto_agent.transition("Complete", f"Successfully packaged assets to output.zip.")
+            await crypto_agent.transition("Complete", "🔐 PACKAGING ENVELOPE DISPATCH READY. SECURED WITH PIN.")
         except Exception as e:
-            await crypto_agent.transition("Idle", f"Packaging failed: {str(e)}")
-            await supervisor.transition("Idle", "Pipeline aborted due to packaging failure.")
+            await crypto_agent.transition("Idle", f"❌ Packaging failed: {str(e)}")
+            await supervisor.transition("Idle", "❌ Pipeline aborted due to packaging failure.")
             raise e
-
+ 
         # Final Supervisor wrap up
-        await supervisor.transition("Complete", "All 10 subagents finished execution. Q&A Generation Complete!")
+        await supervisor.transition("Complete", "🏆 ROBOTIC CONVERGENCE ACHIEVED! ALL 10 CORES NOMINAL.")
         return df
 
     def _generate_stems_heuristically(self, chunks: List[str], section_name: str) -> List[Dict[str, Any]]:

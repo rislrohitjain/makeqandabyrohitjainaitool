@@ -311,6 +311,35 @@ h1, h2, h3 {
     background: linear-gradient(180deg, #6366f1 0%, #a855f7 100%);
     opacity: 0.6;
 }
+
+/* Terminal Console for Robotic Logs */
+.terminal-console {
+    background-color: #030712 !important;
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    border-left: 4px solid #a855f7;
+    border-radius: 12px;
+    padding: 18px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    color: #38bdf8;
+    max-height: 250px;
+    overflow-y: auto;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
+    margin-bottom: 20px;
+}
+
+.terminal-line {
+    margin-bottom: 8px;
+    line-height: 1.5;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    padding-bottom: 3px;
+}
+
+.terminal-line::before {
+    content: "📡 [TELEMETRY] ";
+    color: #a855f7;
+    font-weight: bold;
+}
 </style>
 """
 st.markdown(css_style, unsafe_allow_html=True)
@@ -334,25 +363,56 @@ def get_image_base64_html(photo_path):
 
 
 def get_grid_html(states):
+    icon_map = {
+        "Supervisor Orchestrator": "🤖 Supervisor Orchestrator",
+        "Ingestion Quality Evaluator": "⚙️ Ingestion Quality Evaluator",
+        "Structural Chunking Planner": "🧩 Structural Chunking Planner",
+        "Item Gen Specialist A": "🏭 Item Gen Specialist A",
+        "Item Gen Specialist B": "🏭 Item Gen Specialist B",
+        "Item Gen Specialist C": "🏭 Item Gen Specialist C",
+        "Distractor Variation Designer": "🎯 Distractor Variation Designer",
+        "Deduplication Vector Analyzer": "🛡️ Deduplication Vector Analyzer",
+        "Format Verification Auditor": "🔍 Format Verification Auditor",
+        "Package Cryptography Agent": "🔐 Package Cryptography Agent"
+    }
     html = '<div class="agent-grid">'
     for agent_name, state in states.items():
+        display_name = icon_map.get(agent_name, agent_name)
         state_class = "state-idle"
         if state == "Processing":
             state_class = "state-processing"
         elif state == "Complete":
             state_class = "state-complete"
             
+        display_state = state
+        if state == "Idle":
+            display_state = "💤 Ready / Idle"
+        elif state == "Processing":
+            display_state = "🤖 Processing..."
+        elif state == "Complete":
+            display_state = "✅ Complete"
+            
         html += f"""
         <div class="agent-box {state_class}">
-            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">Subagent</div>
-            <div style="margin-top: 6px; font-size: 14px; font-weight: 700;">{agent_name}</div>
+            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">Robotic Subagent</div>
+            <div style="margin-top: 6px; font-size: 14px; font-weight: 700;">{display_name}</div>
             <div style="margin-top: 12px; font-size: 11px; font-weight: 500; background: rgba(0,0,0,0.25); padding: 4px 10px; border-radius: 20px; display: inline-block;">
-                {state}
+                {display_state}
             </div>
         </div>
         """
     html += '</div>'
     return html
+
+
+@st.dialog("⚠️ Form Validation Alert")
+def show_validation_error_popup(errors_list):
+    st.markdown("### 🤖 Robotic Validation Scan Failed")
+    st.warning("Please correct the following issues before launching the engine:")
+    for err in errors_list:
+        st.markdown(f"- **{err}**")
+    if st.button("Got it, let me fix it", use_container_width=True):
+        st.rerun()
 
 
 @st.dialog("📞 Contact Info")
@@ -523,6 +583,31 @@ def main():
         st.session_state.session_id = None
     if "exam_title" not in st.session_state:
         st.session_state.exam_title = None
+    if "validation_errors" not in st.session_state:
+        st.session_state.validation_errors = {}
+
+    # Proactive validation error clearing
+    form_mobile = st.session_state.get("form_mobile_number", "")
+    if form_mobile:
+        if form_mobile.isdigit() and len(form_mobile) == 10:
+            st.session_state.validation_errors.pop("mobile_number", None)
+
+    form_title = st.session_state.get("form_exam_title", "")
+    if form_title:
+        word_count = len(form_title.split())
+        if word_count <= 10:
+            st.session_state.validation_errors.pop("exam_title", None)
+
+    form_files = st.session_state.get("form_uploaded_files", [])
+    if form_files:
+        if len(form_files) <= 5:
+            invalid_format_files = []
+            for uploaded_file in form_files:
+                ext = os.path.splitext(uploaded_file.name)[1].lower()
+                if ext not in [".pdf", ".docx", ".txt"]:
+                    invalid_format_files.append(uploaded_file.name)
+            if not invalid_format_files:
+                st.session_state.validation_errors.pop("uploaded_files", None)
 
     # Main Config Form
     with st.form("pipeline_form"):
@@ -533,15 +618,21 @@ def main():
         with col1:
             mobile_number = st.text_input(
                 "Mobile Number (Used as plain-text extraction ZIP password)",
-                value="",
-                placeholder="e.g. 9876543210"
+                value=st.session_state.get("form_mobile_number", ""),
+                placeholder="e.g. 9876543210",
+                key="form_mobile_number"
             )
+            if "mobile_number" in st.session_state.validation_errors:
+                st.error(f"❌ {st.session_state.validation_errors['mobile_number']}")
         with col2:
             exam_title = st.text_input(
                 "Exam Title (Appears in PDF running header)",
-                value="",
-                placeholder="e.g. Machine Learning Basics"
+                value=st.session_state.get("form_exam_title", ""),
+                placeholder="e.g. Machine Learning Basics",
+                key="form_exam_title"
             )
+            if "exam_title" in st.session_state.validation_errors:
+                st.error(f"❌ {st.session_state.validation_errors['exam_title']}")
 
         col3, col4, col5 = st.columns([1, 1, 1])
         with col3:
@@ -571,12 +662,15 @@ def main():
             )
 
         uploaded_files = st.file_uploader(
-            "Upload Exam Resources (PDF, DOCX, TXT)",
+            "Upload Exam Resources (PDF, DOCX, TXT) - Max 5 files",
             type=["pdf", "docx", "txt"],
-            accept_multiple_files=True
+            accept_multiple_files=True,
+            key="form_uploaded_files"
         )
+        if "uploaded_files" in st.session_state.validation_errors:
+            st.error(f"❌ {st.session_state.validation_errors['uploaded_files']}")
             
-        submit_btn = st.form_submit_button("🔥 Run Pipeline")
+        submit_btn = st.form_submit_button("🤖 Deploy Robotic Ingestion & Q&A Synthesis Engine")
         st.markdown('</div>', unsafe_allow_html=True)
 
     # Collapsible Status Grid
@@ -585,41 +679,64 @@ def main():
         grid_placeholder.markdown(get_grid_html(st.session_state.tracker_states), unsafe_allow_html=True)
 
     # Logs Console Placeholder
-    st.write("### 📟 Real-Time Agent Logs")
+    st.write("### 📟 Robotic Engine Telemetry Stream")
     logs_placeholder = st.empty()
     if st.session_state.logs:
-        logs_placeholder.text_area("Console Logs", value="\n".join(st.session_state.logs), height=200, disabled=True)
+        log_html = "<div class='terminal-console'>"
+        for log in st.session_state.logs:
+            log_html += f"<div class='terminal-line'>{log}</div>"
+        log_html += "</div>"
+        logs_placeholder.markdown(log_html, unsafe_allow_html=True)
     else:
-        logs_placeholder.info("Waiting for pipeline trigger...")
+        logs_placeholder.info("🤖 System Idle. Awaiting robotic activation command...")
 
     # Form Submission Logic
     if submit_btn:
-        # Form Validations
-        errors = []
+        # Clear previous validation errors
+        st.session_state.validation_errors = {}
+        errors_list = []
         
         # 1. Mobile Number Validation
         if not mobile_number:
-            errors.append("Mobile number is required.")
+            st.session_state.validation_errors["mobile_number"] = "Mobile number is required."
+            errors_list.append("Mobile number is required.")
         elif not mobile_number.isdigit():
-            errors.append("Mobile number must contain digits only.")
+            st.session_state.validation_errors["mobile_number"] = "Mobile number must contain digits only."
+            errors_list.append("Mobile number must contain digits only.")
         elif len(mobile_number) != 10:
-            errors.append("Mobile number must be exactly 10 digits.")
+            st.session_state.validation_errors["mobile_number"] = "Mobile number must be exactly 10 digits."
+            errors_list.append("Mobile number must be exactly 10 digits.")
 
         # 2. Exam Title Length Validation
         if not exam_title:
-            errors.append("Exam Title is required.")
+            st.session_state.validation_errors["exam_title"] = "Exam Title is required."
+            errors_list.append("Exam Title is required.")
         else:
             word_count = len(exam_title.split())
             if word_count > 10:
-                errors.append(f"Exam Title must be <= 10 words (currently {word_count} words).")
+                st.session_state.validation_errors["exam_title"] = f"Exam Title must be <= 10 words (currently {word_count} words)."
+                errors_list.append(f"Exam Title must be <= 10 words (currently {word_count} words).")
 
         # 3. File Upload Verification
         if not uploaded_files:
-            errors.append("At least one document file must be uploaded.")
+            st.session_state.validation_errors["uploaded_files"] = "At least one document file must be uploaded."
+            errors_list.append("At least one document file must be uploaded.")
+        elif len(uploaded_files) > 5:
+            st.session_state.validation_errors["uploaded_files"] = "Maximum 5 files are allowed. Please remove extra files."
+            errors_list.append("Maximum 5 files are allowed. Please remove extra files.")
+        else:
+            invalid_format_files = []
+            for uploaded_file in uploaded_files:
+                ext = os.path.splitext(uploaded_file.name)[1].lower()
+                if ext not in [".pdf", ".docx", ".txt"]:
+                    invalid_format_files.append(uploaded_file.name)
+            if invalid_format_files:
+                err_msg = f"Only PDF, DOCX, and TXT files are allowed. Invalid files: {', '.join(invalid_format_files)}"
+                st.session_state.validation_errors["uploaded_files"] = err_msg
+                errors_list.append(err_msg)
 
-        if errors:
-            for err in errors:
-                st.error(err)
+        if st.session_state.validation_errors:
+            show_validation_error_popup(errors_list)
         else:
             # Clear previous results
             st.session_state.df_result = None
@@ -628,6 +745,7 @@ def main():
             st.session_state.session_id = None
             st.session_state.exam_title = None
             
+            st.toast("⚡ Validation complete. Booting Q&A Robotic Synthesis Engine...", icon="🤖")
             st.success("Configuration validated. Spinning up 10-Subagent Parallel Mesh...")
             
             # Setup temp folder to write files
@@ -648,7 +766,12 @@ def main():
                 states = tracker.get_states()
                 logs = tracker.get_logs()
                 grid_placeholder.markdown(get_grid_html(states), unsafe_allow_html=True)
-                logs_placeholder.text_area("Console Logs", value="\n".join(logs), height=250, disabled=True)
+                
+                log_html = "<div class='terminal-console'>"
+                for log in logs:
+                    log_html += f"<div class='terminal-line'>{log}</div>"
+                log_html += "</div>"
+                logs_placeholder.markdown(log_html, unsafe_allow_html=True)
 
             tracker = AgentStateTracker(on_update_callback=ui_update_callback)
             
@@ -693,7 +816,7 @@ def main():
     # Display results and download button if available
     if st.session_state.df_result is not None:
         st.markdown('<div class="stCard">', unsafe_allow_html=True)
-        st.write("### 🏆 Generated Q&A Matrix Preview")
+        st.write("### 🤖 Synthesized Robotic Q&A Bank Preview")
         st.dataframe(st.session_state.df_result)
         
         mb = st.session_state.get("mobile_number")
@@ -711,9 +834,9 @@ def main():
                 if os.path.exists(zip_path):
                     with open(zip_path, "rb") as f:
                         st.download_button(
-                            label="💾 Download Password-Protected ZIP Package",
+                            label="🤖 Download Complete Robotic Q&A Bank (Protected ZIP Package)",
                             data=f.read(),
-                            file_name="qa_package.zip",
+                            file_name=f"Complete_Robotic_QA_Bank_Package_{mb}.zip",
                             mime="application/zip",
                             use_container_width=True
                         )
@@ -722,9 +845,9 @@ def main():
                 if os.path.exists(xlsx_path):
                     with open(xlsx_path, "rb") as f:
                         st.download_button(
-                            label="📊 Download Excel Spreadsheet (Separately)",
+                            label="📊 Download Questions & Answers Bank (Excel Spreadsheet)",
                             data=f.read(),
-                            file_name="questions.xlsx",
+                            file_name=f"Questions_&_Answers_Bank_{exam_title_val.replace(' ', '_')}.xlsx",
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                             use_container_width=True
                         )
@@ -738,7 +861,7 @@ def main():
                 unique_sets = df_res["Set"].unique().sort().to_list()
                 
                 for set_name in unique_sets:
-                    with st.expander(f"📖 {set_name} Preview & Downloads", expanded=True):
+                    with st.expander(f"📖 Robotic {set_name} Preview & PDF Export", expanded=True):
                         set_df = df_res.filter(pl.col("Set") == set_name)
                         st.dataframe(set_df, use_container_width=True)
                         
@@ -748,7 +871,7 @@ def main():
                         if os.path.exists(set_pdf_path):
                             with open(set_pdf_path, "rb") as f:
                                 st.download_button(
-                                    label=f"📄 Download {set_name} PDF",
+                                    label=f"📄 Download Question Paper & Answer Key PDF ({set_name})",
                                     data=f.read(),
                                     file_name=f"{exam_title_val.replace(' ', '_')}_{set_filename}",
                                     mime="application/pdf",

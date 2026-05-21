@@ -8,3 +8,6 @@ docx2txt>=0.8
 reportlab>=4.1.0
 xlsxwriter>=3.1.0
 pyzipper>=0.3.6
+fastapi>=0.110.0
+uvicorn>=0.28.0
+
