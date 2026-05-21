@@ -1,0 +1,90 @@
+**Antigravity 2.0  
+project folder name : makeqandabyrohitjainaitool
+project in folder path : D:\projects\python\makeqandabyrohitjainaitool
+
+
+also add github setup 
+
+/goal
+
+Execute project setup for "makeqandabyrohitjainaitool" located at "D:\projects\python\makeqandabyrohitjainaitool". 
+
+
+
+also add tester load testing etc. best feacthers
+
+You must act as the Supervisor Orchestrator Agent. Your absolute objective is to spin up, coordinate, and delegate to a 10-Subagent Parallel Mesh to build a fully free, local-first, container-safe Private AI Q&A Generator. 
+
+
+
+Implement a dynamic, responsive visual loader layout via Streamlit that highlights the status of each subagent in real-time. Use Polars instead of Pandas for data processing, Scikit-Learn for text deduplication, and ReportLab for PDF rendering.
+
+
+
+Initialize the multi-agent mesh according to the following 10-role specification:
+
+
+
+=========================================
+
+10-SUBAGENT MATRIX CONFIGURATION PROMPT
+
+=========================================
+
+1. Supervisor Orchestrator: (Primary Agent Thread) Directs execution traffic, spawns subagents on-the-fly, manages async task returns, and compiles the final data frames.
+
+2. Ingestion Quality Evaluator: Inspects text extractions from file types (.pdf, .docx, .txt), strictly validating a 100 MB per-file boundary across up to 5 concurrent objects.
+
+3. Structural Chunking Planner: Implements LangChain RecursiveCharacterTextSplitter loops to index documents into 1200-character segments with a 200-character overlap buffer.
+
+4. Item Generation Specialist A: Evaluates first-third text slices to generate raw question stems and maps out answer vectors.
+
+5. Item Generation Specialist B: Evaluates middle-third text slices to generate intermediate problem stems.
+
+6. Item Generation Specialist C: Evaluates final-third text slices to compile remaining problem sets.
+
+7. Distractor Variation Designer: Configures random, context-plausible false option arrays dynamically scaled based on dropdown properties (from 2 up to 10 options, variable A to J).
+
+8. Deduplication Vector Analyzer: Leverages Scikit-Learn TfidfVectorizer and cosine_similarity matrix comparisons to automatically drop duplicate or overlapping stems above a 0.75 threshold.
+
+9. Format Verification Auditor: Ensures strict layout schema mapping into Polars DataFrames and confirms that the mandatory "--- END ---" termination string finishes every PDF questionnaire file.
+
+10. Package Cryptography Agent: Manages output folder routing isolation under "storage/outputs/{mobile_number}/{session_id}/" and structures the final secure ZIP download package using the user's mobile number as the plain-text password key.
+
+
+
+=========================================
+
+UI LAYER RESPONSIVENESS REQUIREMENTS
+
+=========================================
+
+Write a clean Streamlit interface layout. Inject custom CSS selectors ensuring strict max-width sizing definitions:
+
+- On mobile viewpoints, scale elements fluidly across 95% width parameters.
+
+- On display projectors, bound container allocations safely around an 85% centralized block.
+
+Construct a dedicated HTML grid box component layout directly inside the dashboard viewport. Update each grid module's style properties via state loops to show when a specific subagent shifts states (Idle, Processing, Complete).
+
+
+
+=========================================
+
+EXECUTION STEP SPECIFICATIONS
+
+=========================================
+
+Step 1: Scaffold Workspace - Create requirements.txt containing google-antigravity, polars, scikit-learn, langchain, pypdf, docx2txt, and reportlab. Setup an isolated virtual environment shell layout.
+
+Step 2: Build Processing Logic - Write app/pipeline.py with text parsers, chunking managers, and scikit-learn cosine text filters.
+
+Step 3: Construct Dashboard Layout - Code app/main.py encapsulating the asynchronous subagent status board and dynamic specification input forms (Validating Mobile format and an Exam Title length limit of <= 10 words).
+
+Step 4: Package Output Channels - Write automated generation routines compiling native .xlsx streams via Polars and print-ready PDFs containing standard headers and centered footers via ReportLab.
+
+Step 5: Document & Profile - Produce a thorough local execution, run, and debugging walkthrough detailing exact console script commands and standard dependency fix profiles.
+
+
+
+Proceed asynchronously. Run this complete assignment flow to ultimate completion. Do not interrupt me for feedback iterations—resolve edge cases independently.

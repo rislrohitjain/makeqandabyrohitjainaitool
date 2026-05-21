@@ -1,0 +1,468 @@
+import sys
+import os
+
+# Add project root directory to path to allow absolute imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+import streamlit as st
+import asyncio
+import uuid
+import polars as pl
+from app.agents import AgentStateTracker
+from app.pipeline import QAPipeline
+from app.utils import generate_developer_resume
+
+# Set page config first
+st.set_page_config(
+    page_title="Antigravity 2.0 Q&A Generator",
+    page_icon="🚀",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom Responsive CSS Injector
+css_style = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+    font-family: 'Outfit', sans-serif;
+    background-color: #0b0f19;
+    color: #e2e8f0;
+}
+
+/* Centralized scaling constraints */
+.main .block-container {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .main .block-container {
+        max-width: 95% !important;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+@media (min-width: 1400px) {
+    .main .block-container {
+        max-width: 85% !important;
+    }
+}
+
+/* Beautiful custom container frames */
+.stCard {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+/* Real-time Subagent Grid */
+.agent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.agent-box {
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    font-weight: 600;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.agent-box:hover {
+    transform: translateY(-2px);
+}
+
+/* State Colors */
+.state-idle {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    color: #94a3b8;
+}
+
+.state-processing {
+    background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
+    color: #fef3c7;
+    animation: pulse 1.6s infinite ease-in-out;
+}
+
+.state-complete {
+    background: linear-gradient(135deg, #065f46 0%, #059669 100%);
+    color: #ecfdf5;
+    box-shadow: 0 0 15px rgba(5, 150, 105, 0.3);
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.02); opacity: 0.85; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Custom styled inputs */
+input, select, textarea {
+    background-color: #111827 !important;
+    color: #f3f4f6 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Accent headers */
+h1, h2, h3 {
+    background: linear-gradient(to right, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700 !important;
+}
+</style>
+"""
+st.markdown(css_style, unsafe_allow_html=True)
+
+
+def get_grid_html(states):
+    html = '<div class="agent-grid">'
+    for agent_name, state in states.items():
+        state_class = "state-idle"
+        if state == "Processing":
+            state_class = "state-processing"
+        elif state == "Complete":
+            state_class = "state-complete"
+            
+        html += f"""
+        <div class="agent-box {state_class}">
+            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">Subagent</div>
+            <div style="margin-top: 6px; font-size: 14px; font-weight: 700;">{agent_name}</div>
+            <div style="margin-top: 12px; font-size: 11px; font-weight: 500; background: rgba(0,0,0,0.25); padding: 4px 10px; border-radius: 20px; display: inline-block;">
+                {state}
+            </div>
+        </div>
+        """
+    html += '</div>'
+    return html
+
+
+def main():
+    # Ensure developer resume is generated
+    resume_path = "storage/rohit_jain_resume.pdf"
+    if not os.path.exists(resume_path):
+        os.makedirs("storage", exist_ok=True)
+        try:
+            generate_developer_resume(resume_path)
+        except Exception:
+            pass
+
+    # Developer Profile Sidebar
+    with st.sidebar:
+        st.markdown("## 🖥️ Platform Architecture Deployment Profile")
+        st.markdown("### **Rohit Jain**")
+        st.markdown("**AI Solutions Architect & Full Stack Architect | AI & Data Solutions**")
+        
+        st.markdown("---")
+        st.markdown(
+            "This workspace represents a production-grade optimization tier leveraging local compute, "
+            "low-latency parsing engines, and fluid rendering."
+        )
+        st.markdown("---")
+        
+        st.markdown("#### **Key Competencies**")
+        st.markdown("🎯 **AI Architecture & Advanced Workflows** — LLMs, Agentic Pipelines, & Enterprise Automation.")
+        st.markdown("💻 **Enterprise Full-Stack Engineering** — Highly optimized data microservices and real-time dashboards.")
+        
+        st.markdown("---")
+        st.markdown("#### **Contact Info**")
+        st.markdown("📞 [+91 89469 19241](tel:+918946919241)")
+        st.markdown("✉️ [engrohitjain5@gmail.com](mailto:engrohitjain5@gmail.com)")
+        st.markdown("🌐 **Portfolio Resume** — Technical projects and engineering background.")
+        
+        st.markdown("---")
+        if os.path.exists(resume_path):
+            with open(resume_path, "rb") as f:
+                st.download_button(
+                    label="📄 Download Professional Resume",
+                    data=f.read(),
+                    file_name="Rohit_Jain_Resume.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+
+    st.title("🚀 Antigravity 2.0")
+    st.subheader("Local-First Multi-Agent Private AI Q&A Generator")
+    
+    st.write(
+        "A highly secure, parallelized pipeline compiling your local documents into verified "
+        "Q&A structures. Zero cloud dependencies, fully private."
+    )
+    
+    # Session States
+    if "tracker_states" not in st.session_state:
+        st.session_state.tracker_states = {
+            "Supervisor Orchestrator": "Idle",
+            "Ingestion Quality Evaluator": "Idle",
+            "Structural Chunking Planner": "Idle",
+            "Item Gen Specialist A": "Idle",
+            "Item Gen Specialist B": "Idle",
+            "Item Gen Specialist C": "Idle",
+            "Distractor Variation Designer": "Idle",
+            "Deduplication Vector Analyzer": "Idle",
+            "Format Verification Auditor": "Idle",
+            "Package Cryptography Agent": "Idle"
+        }
+    if "logs" not in st.session_state:
+        st.session_state.logs = []
+    if "df_result" not in st.session_state:
+        st.session_state.df_result = None
+    if "zip_download_path" not in st.session_state:
+        st.session_state.zip_download_path = None
+    if "mobile_number" not in st.session_state:
+        st.session_state.mobile_number = None
+    if "session_id" not in st.session_state:
+        st.session_state.session_id = None
+    if "exam_title" not in st.session_state:
+        st.session_state.exam_title = None
+
+    # Main Config Form
+    with st.form("pipeline_form"):
+        st.markdown('<div class="stCard">', unsafe_allow_html=True)
+        st.write("### 📋 Configuration & Upload")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            mobile_number = st.text_input(
+                "Mobile Number (Used as plain-text extraction ZIP password)",
+                value="",
+                placeholder="e.g. 9876543210"
+            )
+        with col2:
+            exam_title = st.text_input(
+                "Exam Title (Appears in PDF running header)",
+                value="",
+                placeholder="e.g. Machine Learning Basics"
+            )
+
+        col3, col4, col5 = st.columns([1, 1, 1])
+        with col3:
+            set_count = st.number_input(
+                "Number of Sets",
+                min_value=1,
+                max_value=10,
+                value=1,
+                step=1,
+                help="How many question paper sets to generate"
+            )
+        with col4:
+            questions_per_set = st.number_input(
+                "Questions per Set",
+                min_value=1,
+                max_value=100,
+                value=5,
+                step=1,
+                help="How many questions in each question paper set"
+            )
+        with col5:
+            distractor_count = st.selectbox(
+                "Distractor Options (Choices Count)",
+                options=list(range(2, 11)),
+                index=2,  # default to 4 options (A, B, C, D)
+                help="Number of choices per question"
+            )
+
+        uploaded_files = st.file_uploader(
+            "Upload Exam Resources (PDF, DOCX, TXT)",
+            type=["pdf", "docx", "txt"],
+            accept_multiple_files=True
+        )
+            
+        submit_btn = st.form_submit_button("🔥 Run Pipeline")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # Status Grid Placeholder
+    grid_container = st.container()
+    with grid_container:
+        st.write("### ⚡ Multi-Agent Matrix Status")
+        grid_placeholder = st.empty()
+        grid_placeholder.markdown(get_grid_html(st.session_state.tracker_states), unsafe_allow_html=True)
+
+    # Logs Console Placeholder
+    st.write("### 📟 Real-Time Agent Logs")
+    logs_placeholder = st.empty()
+    if st.session_state.logs:
+        logs_placeholder.text_area("Console Logs", value="\n".join(st.session_state.logs), height=200, disabled=True)
+    else:
+        logs_placeholder.info("Waiting for pipeline trigger...")
+
+    # Form Submission Logic
+    if submit_btn:
+        # Form Validations
+        errors = []
+        
+        # 1. Mobile Number Validation
+        if not mobile_number:
+            errors.append("Mobile number is required.")
+        elif not mobile_number.isdigit():
+            errors.append("Mobile number must contain digits only.")
+        elif len(mobile_number) != 10:
+            errors.append("Mobile number must be exactly 10 digits.")
+
+        # 2. Exam Title Length Validation
+        if not exam_title:
+            errors.append("Exam Title is required.")
+        else:
+            word_count = len(exam_title.split())
+            if word_count > 10:
+                errors.append(f"Exam Title must be <= 10 words (currently {word_count} words).")
+
+        # 3. File Upload Verification
+        if not uploaded_files:
+            errors.append("At least one document file must be uploaded.")
+
+        if errors:
+            for err in errors:
+                st.error(err)
+        else:
+            # Clear previous results
+            st.session_state.df_result = None
+            st.session_state.zip_download_path = None
+            st.session_state.mobile_number = None
+            st.session_state.session_id = None
+            st.session_state.exam_title = None
+            
+            st.success("Configuration validated. Spinning up 10-Subagent Parallel Mesh...")
+            
+            # Setup temp folder to write files
+            temp_dir = "storage/temp"
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            temp_paths = []
+            for uploaded_file in uploaded_files:
+                temp_path = os.path.join(temp_dir, uploaded_file.name)
+                with open(temp_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                temp_paths.append(temp_path)
+
+            session_id = str(uuid.uuid4())[:8]
+
+            # Set up the tracker with a callback to render changes live
+            def ui_update_callback():
+                states = tracker.get_states()
+                logs = tracker.get_logs()
+                grid_placeholder.markdown(get_grid_html(states), unsafe_allow_html=True)
+                logs_placeholder.text_area("Console Logs", value="\n".join(logs), height=250, disabled=True)
+
+            tracker = AgentStateTracker(on_update_callback=ui_update_callback)
+            
+            # Execute Pipeline Asynchronously
+            async def run_async_pipeline():
+                pipeline = QAPipeline(tracker)
+                df = await pipeline.execute(
+                    file_paths=temp_paths,
+                    exam_title=exam_title,
+                    mobile_number=mobile_number,
+                    session_id=session_id,
+                    distractor_count=distractor_count,
+                    set_count=int(set_count),
+                    questions_per_set=int(questions_per_set)
+                )
+                return df
+
+            try:
+                # Run the async execution synchronously inside streamlit thread
+                df_result = asyncio.run(run_async_pipeline())
+                
+                st.session_state.df_result = df_result
+                st.session_state.tracker_states = tracker.get_states()
+                st.session_state.logs = tracker.get_logs()
+                st.session_state.mobile_number = mobile_number
+                st.session_state.session_id = session_id
+                st.session_state.exam_title = exam_title
+                
+                # Cleanup temp files
+                for p in temp_paths:
+                    try:
+                        os.remove(p)
+                    except Exception:
+                        pass
+                
+                # Configure ZIP download availability
+                st.session_state.zip_download_path = f"storage/outputs/{mobile_number}/{session_id}/output.zip"
+                st.balloons()
+            except Exception as e:
+                st.error(f"Pipeline execution aborted: {str(e)}")
+
+    # Display results and download button if available
+    if st.session_state.df_result is not None:
+        st.markdown('<div class="stCard">', unsafe_allow_html=True)
+        st.write("### 🏆 Generated Q&A Matrix Preview")
+        st.dataframe(st.session_state.df_result)
+        
+        mb = st.session_state.get("mobile_number")
+        sid = st.session_state.get("session_id")
+        exam_title_val = st.session_state.get("exam_title", "exam")
+        
+        if mb and sid:
+            out_dir = f"storage/outputs/{mb}/{sid}"
+            zip_path = os.path.join(out_dir, "output.zip")
+            xlsx_path = os.path.join(out_dir, "questions.xlsx")
+            
+            col_zip, col_xlsx = st.columns(2)
+            
+            with col_zip:
+                if os.path.exists(zip_path):
+                    with open(zip_path, "rb") as f:
+                        st.download_button(
+                            label="💾 Download Password-Protected ZIP Package",
+                            data=f.read(),
+                            file_name="qa_package.zip",
+                            mime="application/zip",
+                            use_container_width=True
+                        )
+            
+            with col_xlsx:
+                if os.path.exists(xlsx_path):
+                    with open(xlsx_path, "rb") as f:
+                        st.download_button(
+                            label="📊 Download Excel Spreadsheet (Separately)",
+                            data=f.read(),
+                            file_name="questions.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            use_container_width=True
+                        )
+            
+            # Separate sections for each question set
+            st.write("---")
+            st.write("### 📚 Question Sets")
+            
+            df_res = st.session_state.df_result
+            if "Set" in df_res.columns:
+                unique_sets = df_res["Set"].unique().sort().to_list()
+                
+                for set_name in unique_sets:
+                    with st.expander(f"📖 {set_name} Preview & Downloads", expanded=True):
+                        set_df = df_res.filter(pl.col("Set") == set_name)
+                        st.dataframe(set_df, use_container_width=True)
+                        
+                        set_filename = f"{set_name.replace(' ', '_')}.pdf"
+                        set_pdf_path = os.path.join(out_dir, set_filename)
+                        
+                        if os.path.exists(set_pdf_path):
+                            with open(set_pdf_path, "rb") as f:
+                                st.download_button(
+                                    label=f"📄 Download {set_name} PDF",
+                                    data=f.read(),
+                                    file_name=f"{exam_title_val.replace(' ', '_')}_{set_filename}",
+                                    mime="application/pdf",
+                                    key=f"dl_pdf_{set_name.replace(' ', '_')}"
+                                )
+        st.markdown('</div>', unsafe_allow_html=True)
+
+
+if __name__ == "__main__":
+    main()
