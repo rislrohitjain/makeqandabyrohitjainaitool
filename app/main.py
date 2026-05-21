@@ -261,12 +261,12 @@ def get_grid_html(states):
 
 @st.dialog("📞 Contact Info")
 def show_contact_popup():
-    st.markdown("### **Rohit Jain**")
+    st.markdown("### **Rohit Jain (Sr. Software Engineer) (BCA, MCA)**")
     st.markdown("**AI Solutions Architect & Full Stack Architect | AI & Data Solutions**")
     st.markdown("---")
     st.markdown("📞 **Phone:** [+91 89469 19241](tel:+918946919241)")
     st.markdown("✉️ **Email:** [engrohitjain5@gmail.com](mailto:engrohitjain5@gmail.com)")
-    st.markdown("🌐 **Portfolio:** Explore Digital Portfolio Resume — Technical project repositories and engineering background.")
+    st.markdown("🌐 **Portfolio:** [rohitjain-resume.vercel.app](https://rohitjain-resume.vercel.app/) — Explore Digital Portfolio Resume, Technical project repositories, and engineering background.")
     st.markdown("---")
     st.write("Feel free to reach out for enterprise AI workflows, automated LLM systems, or optimized full-stack microservices.")
 
@@ -291,7 +291,7 @@ def main():
             st.info("Photo loading...")
             
         st.markdown("## 🖥️ Platform Architecture")
-        st.markdown("### **Rohit Jain**")
+        st.markdown("### **Rohit Jain (Sr. Software Engineer) (BCA, MCA)**")
         
         # Toggle Button
         if "show_profile" not in st.session_state:
@@ -302,7 +302,8 @@ def main():
             
         if st.session_state.show_profile:
             st.markdown("---")
-            st.markdown("**AI Solutions Architect & Full Stack Architect | AI & Data Solutions**")
+            st.markdown("**Sr. Software Engineer | AI Solutions Architect & Full Stack Architect**")
+            st.markdown("🌐 **Portfolio:** [rohitjain-resume.vercel.app](https://rohitjain-resume.vercel.app/)")
             st.markdown(
                 "This workspace represents a production-grade optimization tier leveraging local compute, "
                 "low-latency parsing engines, and fluid rendering."
@@ -631,7 +632,7 @@ def main():
     st.markdown("---")
     st.markdown(
         "<div style='text-align: center; padding: 15px; font-size: 13px; color: #64748b; font-weight: 500;'>"
-        "Automated Rohit Jain's Assessment Engine &bull; Developed by <b>Rohit Jain</b>"
+        "Automated Rohit Jain's Assessment Engine &bull; Developed by <a href='https://rohitjain-resume.vercel.app/' target='_blank' style='color: #6366f1; text-decoration: none;'><b>Rohit Jain (Sr. Software Engineer) (BCA, MCA)</b></a>"
         "</div>",
         unsafe_allow_html=True
     )

@@ -453,10 +453,10 @@ def generate_developer_resume(output_pdf_path: str):
     
     # Name and Title
     flowables.append(Paragraph("Rohit Jain", name_style))
-    flowables.append(Paragraph("AI Solutions Architect & Full Stack Architect | AI & Data Solutions", title_style))
+    flowables.append(Paragraph("Sr. Software Engineer | AI Solutions Architect & Full Stack Architect", title_style))
     
     # Contact Info
-    contact_text = "<b>Phone:</b> +91 89469 19241 &nbsp;&nbsp;|&nbsp;&nbsp; <b>Email:</b> engrohitjain5@gmail.com &nbsp;&nbsp;|&nbsp;&nbsp; <b>Location:</b> India"
+    contact_text = "<b>Phone:</b> +91 89469 19241 &nbsp;&nbsp;|&nbsp;&nbsp; <b>Email:</b> engrohitjain5@gmail.com &nbsp;&nbsp;|&nbsp;&nbsp; <b>Portfolio:</b> rohitjain-resume.vercel.app"
     flowables.append(Paragraph(contact_text, body_style))
     
     # Horizontal line
@@ -495,7 +495,8 @@ def generate_developer_resume(output_pdf_path: str):
     
     # Education
     flowables.append(Paragraph("Education & Credentials", section_heading_style))
-    flowables.append(Paragraph("&bull; <b>Bachelor of Technology in Computer Science & Engineering</b>", bullet_style))
+    flowables.append(Paragraph("&bull; <b>Master of Computer Applications (MCA)</b>", bullet_style))
+    flowables.append(Paragraph("&bull; <b>Bachelor of Computer Applications (BCA)</b>", bullet_style))
     flowables.append(Paragraph("&bull; Certified AI Solution Architect and Technical Lead.", bullet_style))
     
     doc.build(flowables)
