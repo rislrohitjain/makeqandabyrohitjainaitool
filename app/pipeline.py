@@ -49,7 +49,8 @@ class QAPipeline:
         session_id: str,
         distractor_count: int,
         set_count: int = 1,
-        questions_per_set: int = 5
+        questions_per_set: int = 5,
+        difficulty_level: str = "Medium"
     ) -> pl.DataFrame:
         """
         Executes the 10-Subagent Parallel Mesh layout asynchronously.
@@ -108,7 +109,7 @@ class QAPipeline:
             raise e
 
         if not chunks:
-            chunks = ["This is a fallback placeholder text chunk because no text could be parsed."]
+            chunks = ["No readable text could be extracted from the provided files."]
 
         # 4, 5, 6. Parallel Item Generation Specialists (A, B, C)
         # Split chunks into thirds
@@ -125,7 +126,7 @@ class QAPipeline:
         
         async def run_specialist_a():
             await agent_a.transition("Processing", f"🏭 EXTRACTING Q&A STEM FACTS AND DEFINITIONS (PART 1 - {len(chunks_a)} chunks)...")
-            qa = self._generate_stems_heuristically(chunks_a, section_name="Section A")
+            qa = self._generate_stems_heuristically(chunks_a, section_name="Section A", difficulty_level=difficulty_level)
             await agent_a.transition("Complete", f"🏭 GENERATION PHASE A SUCCESS. COMPILED {len(qa)} RAW STEMS.")
             return qa
 
@@ -134,7 +135,7 @@ class QAPipeline:
                 await agent_b.transition("Complete", "🏭 Specialist B Idle (Text corpus too small for multi-thread slicing).")
                 return []
             await agent_b.transition("Processing", f"🏭 EXTRACTING Q&A STEM FACTS AND DEFINITIONS (PART 2 - {len(chunks_b)} chunks)...")
-            qa = self._generate_stems_heuristically(chunks_b, section_name="Section B")
+            qa = self._generate_stems_heuristically(chunks_b, section_name="Section B", difficulty_level=difficulty_level)
             await agent_b.transition("Complete", f"🏭 GENERATION PHASE B SUCCESS. COMPILED {len(qa)} RAW STEMS.")
             return qa
 
@@ -143,7 +144,7 @@ class QAPipeline:
                 await agent_c.transition("Complete", "🏭 Specialist C Idle (Text corpus too small for multi-thread slicing).")
                 return []
             await agent_c.transition("Processing", f"🏭 EXTRACTING Q&A STEM FACTS AND DEFINITIONS (PART 3 - {len(chunks_c)} chunks)...")
-            qa = self._generate_stems_heuristically(chunks_c, section_name="Section C")
+            qa = self._generate_stems_heuristically(chunks_c, section_name="Section C", difficulty_level=difficulty_level)
             await agent_c.transition("Complete", f"🏭 GENERATION PHASE C SUCCESS. COMPILED {len(qa)} RAW STEMS.")
             return qa
 
@@ -155,6 +156,12 @@ class QAPipeline:
         )
         
         raw_qa_stems = qa_a + qa_b + qa_c
+
+        # Sort raw_qa_stems based on difficulty level
+        if difficulty_level.lower() == "low":
+            raw_qa_stems.sort(key=lambda x: len(x["question"].split()) + len(x["answer"].split()))
+        elif difficulty_level.lower() == "high":
+            raw_qa_stems.sort(key=lambda x: len(x["question"].split()) + len(x["answer"].split()), reverse=True)
 
         # 7. Distractor Variation Designer
         distractor_agent = BaseAgent("Distractor Variation Designer", self.tracker)
@@ -171,7 +178,7 @@ class QAPipeline:
             section = item["section"]
             
             # Generate plausible distractors
-            distractors = self._generate_plausible_distractors(correct_answer, all_sentences, distractor_count)
+            distractors = self._generate_plausible_distractors(correct_answer, all_sentences, distractor_count, difficulty_level)
             
             # Combine correct + distractors and shuffle
             options_list = [correct_answer] + distractors
@@ -226,73 +233,46 @@ class QAPipeline:
         await auditor_agent.transition("Processing", "🔍 AUDITING DATA MATRICES FOR SCHEMA AND OPTION COMPLIANCE...")
         
         # Pad, slice, and partition into sets
-        total_needed = set_count * questions_per_set
+        # We only need enough unique questions for ONE set. Other sets will shuffle these.
+        total_needed = questions_per_set
         
-        # Fallback question pool to draw from if we run out of unique questions
-        fallback_pool = [
-            ("What is the primary function of this automated system?", "The system aims to implement a highly secure local Q&A pipeline."),
-            ("How does the multi-agent mesh improve document auditing?", "It breaks down tasks into isolated, specialized subagent responsibilities."),
-            ("Why is password cryptography isolated in the storage pipeline?", "To prevent plain text leakage of sensitive examination materials."),
-            ("What represents the main goal of the format auditor?", "It validates Polars DataFrame schema and formats options correctly."),
-            ("Which libraries are utilized for document ingestion in this system?", "pypdf and docx2txt are utilized for text extraction from PDF and DOCX."),
-            ("What encryption format does the package cryptography agent use?", "It uses legacy ZipCrypto for broad multi-platform compatibility."),
-            ("How are the parallel item generation specialists divided?", "Chunks of text are divided into thirds and processed by separate agents."),
-            ("What is the default character splitter configuration?", "The RecursiveCharacterTextSplitter uses a chunk size of 1200 and overlap of 200."),
-            ("Why is the mobile number used as the ZIP password?", "To establish a user-specific secret key for output packaging."),
-            ("What is the purpose of the NumberedCanvas wrapper?", "It dynamically computes total pages to draw 'Page X of Y' on all sheets.")
-        ]
-        
-        # Convert fallback pool to complete question dictionary format
-        formatted_fallbacks = []
-        for f_idx, (q_text, a_text) in enumerate(fallback_pool):
-            distractors = self._generate_plausible_distractors(a_text, all_sentences, distractor_count)
-            options_list = [a_text] + distractors
-            random.seed(f_idx + 200)
-            random.shuffle(options_list)
-            option_letters = [chr(65 + i) for i in range(len(options_list))]
-            formatted_options = []
-            correct_letter = "A"
-            for letter, opt_text in zip(option_letters, options_list):
-                formatted_options.append(f"{letter}) {opt_text}")
-                if opt_text == a_text:
-                    correct_letter = letter
-            options_string = " | ".join(formatted_options)
-            
-            final_fb = {
-                "Section": "General",
-                "Question Stem": q_text,
-                "Options": options_string,
-                "Correct Answer": correct_letter
-            }
-            for i, opt_text in enumerate(options_list):
-                final_fb[f"Option {chr(65 + i)}"] = opt_text
-            formatted_fallbacks.append(final_fb)
- 
         # Pad deduped_qa if we don't have enough questions
+        # We must strictly use only generated questions from the document
+        iteration_count = 0
         while len(deduped_qa) < total_needed:
-            # First try to pull from our formatted fallbacks
-            unused_fallbacks = [fb for fb in formatted_fallbacks if fb["Question Stem"] not in [q["Question Stem"] for q in deduped_qa]]
-            if unused_fallbacks:
-                new_item = random.choice(unused_fallbacks)
+            if deduped_qa:
+                cloned = random.choice(deduped_qa)
+                new_item = cloned.copy()
+                new_item["Question Stem"] = new_item["Question Stem"] + f" (Variant {iteration_count + 1})"
+                deduped_qa.append(new_item)
             else:
-                if deduped_qa:
-                    cloned = random.choice(deduped_qa)
-                    new_item = cloned.copy()
-                    new_item["Question Stem"] = new_item["Question Stem"] + " (Alternative Context)"
-                else:
-                    # Build default fallback with appropriate distractor count
-                    fallback_options = ["To process and generate sets of questions"] + [f"Fallback distractor {i}" for i in range(distractor_count - 1)]
-                    option_letters = [chr(65 + i) for i in range(len(fallback_options))]
-                    formatted_options = [f"{l}) {opt}" for l, opt in zip(option_letters, fallback_options)]
-                    new_item = {
-                        "Section": "General",
-                        "Question Stem": "What is the primary function of this automated system?",
-                        "Options": " | ".join(formatted_options),
-                        "Correct Answer": "A"
-                    }
-                    for i in range(distractor_count):
-                        new_item[f"Option {chr(65 + i)}"] = fallback_options[i]
-            deduped_qa.append(new_item)
+                # If absolute zero questions could be generated from text, fallback to a generic text-based question
+                generic_ans = all_sentences[0] if all_sentences else "No text found in document."
+                generic_q = "What is the main topic discussed in the beginning of the text?"
+                
+                distractors = self._generate_plausible_distractors(generic_ans, all_sentences, distractor_count, difficulty_level)
+                options_list = [generic_ans] + distractors
+                random.seed(iteration_count)
+                random.shuffle(options_list)
+                option_letters = [chr(65 + i) for i in range(len(options_list))]
+                formatted_options = []
+                correct_letter = "A"
+                for letter, opt_text in zip(option_letters, options_list):
+                    formatted_options.append(f"{letter}) {opt_text}")
+                    if opt_text == generic_ans:
+                        correct_letter = letter
+                options_string = " | ".join(formatted_options)
+                
+                new_item = {
+                    "Section": "General",
+                    "Question Stem": generic_q,
+                    "Options": options_string,
+                    "Correct Answer": correct_letter
+                }
+                for i, opt_text in enumerate(options_list):
+                    new_item[f"Option {chr(65 + i)}"] = opt_text
+                deduped_qa.append(new_item)
+            iteration_count += 1
  
         # Slice to exactly total_needed
         deduped_qa = deduped_qa[:total_needed]
@@ -301,9 +281,14 @@ class QAPipeline:
         final_sets_qa = []
         for s_idx in range(set_count):
             set_name = f"Set {chr(65 + s_idx)}"
+            # Create a shuffled copy of the questions for this set
+            set_questions = list(deduped_qa)
+            # Use stable random seed based on set index to shuffle differently for each set
+            random.seed(s_idx + 500)
+            random.shuffle(set_questions)
+            
             for q_idx in range(questions_per_set):
-                overall_idx = s_idx * questions_per_set + q_idx
-                question_item = deduped_qa[overall_idx].copy()
+                question_item = set_questions[q_idx].copy()
                 question_item["Set"] = set_name
                 question_item["Question ID"] = str(q_idx + 1)
                 final_sets_qa.append(question_item)
@@ -340,10 +325,9 @@ class QAPipeline:
         
         try:
             # 1. Export Excel using Polars df.write_excel(), dropping the combined 'Options' column and ordering columns logically
-            excel_cols = ["Set", "Question ID", "Section", "Question Stem"]
+            excel_cols = ["Set", "Question ID", "Section", "Correct Answer", "Question Stem"]
             for i in range(distractor_count):
                 excel_cols.append(f"Option {chr(65 + i)}")
-            excel_cols.append("Correct Answer")
             
             excel_df = df.select(excel_cols)
             await loop.run_in_executor(self.executor, excel_df.write_excel, xlsx_path)
@@ -377,7 +361,7 @@ class QAPipeline:
         await supervisor.transition("Complete", "🏆 ROBOTIC CONVERGENCE ACHIEVED! ALL 10 CORES NOMINAL.")
         return df
 
-    def _generate_stems_heuristically(self, chunks: List[str], section_name: str) -> List[Dict[str, Any]]:
+    def _generate_stems_heuristically(self, chunks: List[str], section_name: str, difficulty_level: str = "Medium") -> List[Dict[str, Any]]:
         """
         Extracts key noun definitions and facts heuristically from text chunks.
         """
@@ -423,7 +407,7 @@ class QAPipeline:
                 if len(first_sent) > 30:
                     words = first_sent.split()
                     first_few = " ".join(words[:4])
-                    question = f"Based on the context, what is the significance of '{first_few}...'?"
+                    question = f"What is the significance of '{first_few}...'?"
                     chunk_qa.append({
                         "question": question,
                         "answer": first_sent,
@@ -432,23 +416,24 @@ class QAPipeline:
             
             qa_pairs.extend(chunk_qa)
             
-        # Ensure we return at least 3 stems per division
-        if len(qa_pairs) < 3:
-            fallbacks = [
-                ("What represents the primary objective of this system?", "The system aims to implement a highly secure local Q&A pipeline."),
-                ("How does the multi-agent mesh improve document auditing?", "It breaks down tasks into isolated, specialized subagent responsibilities."),
-                ("Why is password cryptography isolated in the storage pipeline?", "To prevent plain text leakage of sensitive examination materials.")
-            ]
-            for q, a in fallbacks:
-                qa_pairs.append({
-                    "question": q,
-                    "answer": a,
-                    "section": section_name
-                })
+        # If we couldn't generate enough stems via regex, generate more from sentences directly
+        if len(qa_pairs) < 3 and chunks:
+            for chunk in chunks:
+                sentences = [s.strip() for s in re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s', chunk) if s.strip()]
+                for s in sentences:
+                    if len(s) > 30 and len(qa_pairs) < 3:
+                        words = s.split()
+                        first_few = " ".join(words[:5])
+                        question = f"What is discussed regarding '{first_few}...'?"
+                        qa_pairs.append({
+                            "question": question,
+                            "answer": s,
+                            "section": section_name
+                        })
                 
         return qa_pairs
 
-    def _generate_plausible_distractors(self, correct_answer: str, all_sentences: List[str], distractor_count: int) -> List[str]:
+    def _generate_plausible_distractors(self, correct_answer: str, all_sentences: List[str], distractor_count: int, difficulty_level: str = "Medium") -> List[str]:
         """
         Uses other document contents to form plausible distractor choices.
         """
@@ -459,33 +444,39 @@ class QAPipeline:
             if len(s.strip()) > 15 and correct_answer.lower() not in s.lower()
         ]
         
+        # Determine truncation limit based on difficulty level
+        limit = 10
+        if difficulty_level.lower() == "low":
+            limit = 5
+        elif difficulty_level.lower() == "high":
+            limit = 18
+
         # Use random choice from text
         random.shuffle(candidate_sentences)
         for s in candidate_sentences:
             words = s.split()
             # Truncate to option size
-            opt = " ".join(words[:10]) + "." if len(words) > 10 else s
+            opt = " ".join(words[:limit]) + "." if len(words) > limit else s
             if opt not in distractors and opt != correct_answer:
                 distractors.append(opt)
                 if len(distractors) == distractor_count - 1:
                     break
                     
-        # Static fallback distractors
-        fallbacks = [
-            "This criteria is unsupported by the provided document sections.",
-            "An alternative model configuration which was omitted.",
-            "A structural dependency that violates pipeline constraints.",
-            "The standard baseline result under high-latency network parameters.",
-            "None of the listed implementations align with the audit requirements.",
-            "An outdated version that is now deprecated by modern standards.",
-            "The secondary data stream containing invalid character boundaries."
-        ]
-        
-        for fb in fallbacks:
-            if len(distractors) == distractor_count - 1:
-                break
-            if fb not in distractors and fb != correct_answer:
-                distractors.append(fb)
+        # Dynamic fallback distractors using document words if sentences run out
+        fallback_counter = 0
+        while len(distractors) < distractor_count - 1:
+            if candidate_sentences:
+                # Re-use candidate sentences with some modifications or different splits
+                s = random.choice(candidate_sentences)
+                words = s.split()
+                # Take a random slice of the sentence
+                start_idx = random.randint(0, max(0, len(words) - limit))
+                opt_slice = " ".join(words[start_idx:start_idx+limit]) + "."
+                if opt_slice and opt_slice not in distractors and opt_slice != correct_answer:
+                    distractors.append(opt_slice)
+            else:
+                distractors.append(f"Information not found in the text (Option {fallback_counter+1}).")
+            fallback_counter += 1
                 
         return distractors
 

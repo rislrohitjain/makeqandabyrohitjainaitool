@@ -634,7 +634,7 @@ def main():
             if "exam_title" in st.session_state.validation_errors:
                 st.error(f"❌ {st.session_state.validation_errors['exam_title']}")
 
-        col3, col4, col5 = st.columns([1, 1, 1])
+        col3, col4, col5, col6 = st.columns(4)
         with col3:
             set_count = st.number_input(
                 "Number of Sets",
@@ -659,6 +659,13 @@ def main():
                 options=list(range(2, 11)),
                 index=2,  # default to 4 options (A, B, C, D)
                 help="Number of choices per question"
+            )
+        with col6:
+            difficulty_level = st.selectbox(
+                "Difficulty Level",
+                options=["Low", "Medium", "High"],
+                index=1,
+                help="Complexity of generated question stems and distractor lengths"
             )
 
         uploaded_files = st.file_uploader(
@@ -785,7 +792,8 @@ def main():
                     session_id=session_id,
                     distractor_count=distractor_count,
                     set_count=int(set_count),
-                    questions_per_set=int(questions_per_set)
+                    questions_per_set=int(questions_per_set),
+                    difficulty_level=difficulty_level
                 )
                 return df
 

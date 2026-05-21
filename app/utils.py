@@ -6,7 +6,7 @@ import polars as pl
 from typing import List
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, KeepTogether, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, KeepTogether, PageBreak, Table, TableStyle
 from reportlab.pdfgen import canvas
 
 class NumberedCanvas(canvas.Canvas):
@@ -164,6 +164,16 @@ def build_pdf_reportlab(df: pl.DataFrame, exam_title: str, output_pdf_path: str)
         spaceAfter=12
     )
 
+    sig_style = ParagraphStyle(
+        'SignatureStyle',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=10,
+        leading=14,
+        spaceBefore=15,
+        spaceAfter=5
+    )
+
     end_style = ParagraphStyle(
         'EndStyle',
         parent=styles['Normal'],
@@ -194,13 +204,26 @@ def build_pdf_reportlab(df: pl.DataFrame, exam_title: str, output_pdf_path: str)
             flowables.append(Paragraph(f"=== {set_name} ===", set_header_style))
             flowables.append(Spacer(1, 5))
             
+            student_info_data = [
+                [
+                    Paragraph("<b>Name of Student:</b> ___________________________", sig_style),
+                    Paragraph("<b>Unique Number:</b> ___________________________", sig_style)
+                ]
+            ]
+            student_info_table = Table(student_info_data, colWidths=[252, 252])
+            student_info_table.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+            ]))
+            flowables.append(student_info_table)
+            flowables.append(Spacer(1, 15))
+            
             set_df = df.filter(pl.col("Set") == set_name)
             for row in set_df.iter_rows(named=True):
                 q_id = row.get("Question ID", "")
                 section = row.get("Section", "")
                 stem = row.get("Question Stem", "")
                 options_str = row.get("Options", "")
-                correct_ans = row.get("Correct Answer", "")
                 
                 q_header = f"Q{q_id}. [{section}] {stem}"
                 q_flow = Paragraph(q_header, q_style)
@@ -210,16 +233,44 @@ def build_pdf_reportlab(df: pl.DataFrame, exam_title: str, output_pdf_path: str)
                 for opt in options_list:
                     opt_flows.append(Paragraph(opt, opt_style))
                     
-                ans_flow = Paragraph(f"<b>Correct Option:</b> {correct_ans}", ans_style)
-                flowables.append(KeepTogether([q_flow] + opt_flows + [ans_flow, Spacer(1, 5)]))
+                flowables.append(KeepTogether([q_flow] + opt_flows + [Spacer(1, 5)]))
+            
+            # Add teacher and student signature section at the end of each set
+            sig_data = [
+                [
+                    Paragraph("<b>Student's Signature:</b> ___________________", sig_style),
+                    Paragraph("<b>Teacher's Signature:</b> ___________________", sig_style)
+                ]
+            ]
+            sig_table = Table(sig_data, colWidths=[252, 252])
+            sig_table.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+            ]))
+            flowables.append(Spacer(1, 20))
+            flowables.append(KeepTogether([sig_table, Spacer(1, 10)]))
+            
     else:
         # Backward compatibility fallback
+        student_info_data = [
+            [
+                Paragraph("<b>Name of Student:</b> ___________________________", sig_style),
+                Paragraph("<b>Unique Number:</b> ___________________________", sig_style)
+            ]
+        ]
+        student_info_table = Table(student_info_data, colWidths=[252, 252])
+        student_info_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+        ]))
+        flowables.append(student_info_table)
+        flowables.append(Spacer(1, 15))
+
         for row in df.iter_rows(named=True):
             q_id = row.get("Question ID", "")
             section = row.get("Section", "")
             stem = row.get("Question Stem", "")
             options_str = row.get("Options", "")
-            correct_ans = row.get("Correct Answer", "")
             
             q_header = f"Q{q_id}. [{section}] {stem}"
             q_flow = Paragraph(q_header, q_style)
@@ -229,8 +280,22 @@ def build_pdf_reportlab(df: pl.DataFrame, exam_title: str, output_pdf_path: str)
             for opt in options_list:
                 opt_flows.append(Paragraph(opt, opt_style))
                 
-            ans_flow = Paragraph(f"<b>Correct Option:</b> {correct_ans}", ans_style)
-            flowables.append(KeepTogether([q_flow] + opt_flows + [ans_flow, Spacer(1, 5)]))
+            flowables.append(KeepTogether([q_flow] + opt_flows + [Spacer(1, 5)]))
+            
+        # Add teacher and student signature section
+        sig_data = [
+            [
+                Paragraph("<b>Student's Signature:</b> ___________________", sig_style),
+                Paragraph("<b>Teacher's Signature:</b> ___________________", sig_style)
+            ]
+        ]
+        sig_table = Table(sig_data, colWidths=[252, 252])
+        sig_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+        ]))
+        flowables.append(Spacer(1, 20))
+        flowables.append(KeepTogether([sig_table, Spacer(1, 10)]))
     
     # Append the mandatory layout termination string
     flowables.append(Spacer(1, 15))

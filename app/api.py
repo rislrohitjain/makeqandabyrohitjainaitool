@@ -36,6 +36,10 @@ OUTPUTS_DIR = os.path.join(STORAGE_DIR, "outputs")
 os.makedirs(TEMP_DIR, exist_ok=True)
 os.makedirs(OUTPUTS_DIR, exist_ok=True)
 
+def save_upload_file(upload_file: UploadFile, destination: str):
+    with open(destination, "wb") as buffer:
+        shutil.copyfileobj(upload_file.file, buffer)
+
 
 def validate_api_inputs(mobile_number: str, exam_title: str, files: List[UploadFile]) -> List[str]:
     """
@@ -84,7 +88,8 @@ async def execute_generation_pipeline(
     mobile_number: str,
     distractor_count: int,
     set_count: int,
-    questions_per_set: int
+    questions_per_set: int,
+    difficulty_level: str = "Medium"
 ):
     """
     Executes the pipeline inside the background task and updates the job status dict.
@@ -146,7 +151,8 @@ async def execute_generation_pipeline(
             session_id=session_id,
             distractor_count=distractor_count,
             set_count=set_count,
-            questions_per_set=questions_per_set
+            questions_per_set=questions_per_set,
+            difficulty_level=difficulty_level
         )
         
         # Read files generated inside output folder
@@ -217,6 +223,7 @@ async def generate_qa_bank_async(
     distractor_count: int = Form(4, description="Number of distractor options (choices A, B, C...)"),
     set_count: int = Form(1, description="Number of distinct question sets to generate"),
     questions_per_set: int = Form(5, description="Number of questions per set"),
+    difficulty_level: str = Form("Medium", description="Difficulty level of generated questions (Low, Medium, High)"),
     files: List[UploadFile] = File(..., description="Allowed formats: PDF, DOCX, TXT (Max 5 files)")
 ):
     """
@@ -255,7 +262,8 @@ async def generate_qa_bank_async(
         mobile_number=mobile_number,
         distractor_count=distractor_count,
         set_count=set_count,
-        questions_per_set=questions_per_set
+        questions_per_set=questions_per_set,
+        difficulty_level=difficulty_level
     )
     
     return {
@@ -273,6 +281,7 @@ async def generate_qa_bank_sync(
     distractor_count: int = Form(4),
     set_count: int = Form(1),
     questions_per_set: int = Form(5),
+    difficulty_level: str = Form("Medium"),
     files: List[UploadFile] = File(...)
 ):
     """
@@ -305,7 +314,8 @@ async def generate_qa_bank_sync(
         mobile_number=mobile_number,
         distractor_count=distractor_count,
         set_count=set_count,
-        questions_per_set=questions_per_set
+        questions_per_set=questions_per_set,
+        difficulty_level=difficulty_level
     )
     
     job = JOBS_STATUS.get(session_id)
