@@ -14,7 +14,7 @@ class NumberedCanvas(canvas.Canvas):
     Two-pass canvas to dynamically compute total page count and draw
     running header (Exam Title) and running footer (Page X of Y).
     """
-    exam_title = "Q&A Generator Examination"
+    exam_title = "Automated Rohit Jain's Question Paper & Answer Key"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

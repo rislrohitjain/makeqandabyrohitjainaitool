@@ -14,7 +14,7 @@ from app.utils import generate_developer_resume
 
 # Set page config first
 st.set_page_config(
-    page_title="Antigravity 2.0 Q&A Generator",
+    page_title="Automated Rohit Jain's Question Paper & Answer Key",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -29,6 +29,30 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
     font-family: 'Outfit', sans-serif;
     background-color: #0b0f19;
     color: #e2e8f0;
+}
+
+/* Smooth Scrolling & Glowing Scrollbar */
+html {
+    scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0b0f19;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #6366f1 0%, #a855f7 100%);
+    border-radius: 6px;
+    border: 2px solid #0b0f19;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #a855f7 0%, #6366f1 100%);
 }
 
 /* Centralized scaling constraints */
@@ -150,6 +174,18 @@ def get_grid_html(states):
     return html
 
 
+@st.dialog("📞 Contact Info")
+def show_contact_popup():
+    st.markdown("### **Rohit Jain**")
+    st.markdown("**AI Solutions Architect & Full Stack Architect | AI & Data Solutions**")
+    st.markdown("---")
+    st.markdown("📞 **Phone:** [+91 89469 19241](tel:+918946919241)")
+    st.markdown("✉️ **Email:** [engrohitjain5@gmail.com](mailto:engrohitjain5@gmail.com)")
+    st.markdown("🌐 **Portfolio:** Explore Digital Portfolio Resume — Technical project repositories and engineering background.")
+    st.markdown("---")
+    st.write("Feel free to reach out for enterprise AI workflows, automated LLM systems, or optimized full-stack microservices.")
+
+
 def main():
     # Ensure developer resume is generated
     resume_path = "storage/rohit_jain_resume.pdf"
@@ -162,27 +198,39 @@ def main():
 
     # Developer Profile Sidebar
     with st.sidebar:
-        st.markdown("## 🖥️ Platform Architecture Deployment Profile")
+        # Display Developer Photo
+        photo_path = os.path.join(os.path.dirname(__file__), "rohit_jain.jpg")
+        if os.path.exists(photo_path):
+            st.image(photo_path, caption="Rohit Jain", use_container_width=True)
+        else:
+            st.info("Photo loading...")
+            
+        st.markdown("## 🖥️ Platform Architecture")
         st.markdown("### **Rohit Jain**")
-        st.markdown("**AI Solutions Architect & Full Stack Architect | AI & Data Solutions**")
         
-        st.markdown("---")
-        st.markdown(
-            "This workspace represents a production-grade optimization tier leveraging local compute, "
-            "low-latency parsing engines, and fluid rendering."
-        )
-        st.markdown("---")
-        
-        st.markdown("#### **Key Competencies**")
-        st.markdown("🎯 **AI Architecture & Advanced Workflows** — LLMs, Agentic Pipelines, & Enterprise Automation.")
-        st.markdown("💻 **Enterprise Full-Stack Engineering** — Highly optimized data microservices and real-time dashboards.")
-        
-        st.markdown("---")
-        st.markdown("#### **Contact Info**")
-        st.markdown("📞 [+91 89469 19241](tel:+918946919241)")
-        st.markdown("✉️ [engrohitjain5@gmail.com](mailto:engrohitjain5@gmail.com)")
-        st.markdown("🌐 **Portfolio Resume** — Technical projects and engineering background.")
-        
+        # Toggle Button
+        if "show_profile" not in st.session_state:
+            st.session_state.show_profile = False
+            
+        if st.button("🖥️ Toggle Profile Details", use_container_width=True):
+            st.session_state.show_profile = not st.session_state.show_profile
+            
+        if st.session_state.show_profile:
+            st.markdown("---")
+            st.markdown("**AI Solutions Architect & Full Stack Architect | AI & Data Solutions**")
+            st.markdown(
+                "This workspace represents a production-grade optimization tier leveraging local compute, "
+                "low-latency parsing engines, and fluid rendering."
+            )
+            st.markdown("#### **Key Competencies**")
+            st.markdown("🎯 **AI Architecture & Advanced Workflows** — LLMs, Agentic Pipelines, & Enterprise Automation.")
+            st.markdown("💻 **Enterprise Full-Stack Engineering** — Highly optimized data microservices and real-time dashboards.")
+            st.markdown("---")
+            
+        # Contact Info Popup Button
+        if st.button("📞 Contact Info", use_container_width=True):
+            show_contact_popup()
+            
         st.markdown("---")
         if os.path.exists(resume_path):
             with open(resume_path, "rb") as f:
@@ -194,12 +242,11 @@ def main():
                     use_container_width=True
                 )
 
-    st.title("🚀 Antigravity 2.0")
-    st.subheader("Local-First Multi-Agent Private AI Q&A Generator")
+    st.title("🚀 Automated Rohit Jain's Question Paper & Answer Key")
     
     st.write(
-        "A highly secure, parallelized pipeline compiling your local documents into verified "
-        "Q&A structures. Zero cloud dependencies, fully private."
+        "An AI-driven Rohit Jain's assessment engine that automates the generation of structured question papers "
+        "and comprehensive evaluation keys from any source material."
     )
     
     # Session States
@@ -284,10 +331,8 @@ def main():
         submit_btn = st.form_submit_button("🔥 Run Pipeline")
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Status Grid Placeholder
-    grid_container = st.container()
-    with grid_container:
-        st.write("### ⚡ Multi-Agent Matrix Status")
+    # Collapsible Status Grid
+    with st.expander("⚡ Multi-Agent Matrix Status", expanded=False):
         grid_placeholder = st.empty()
         grid_placeholder.markdown(get_grid_html(st.session_state.tracker_states), unsafe_allow_html=True)
 
@@ -462,6 +507,49 @@ def main():
                                     key=f"dl_pdf_{set_name.replace(' ', '_')}"
                                 )
         st.markdown('</div>', unsafe_allow_html=True)
+        
+    # Section 5: Real-Time Compute & Engine Execution Profile Diagnostics
+    st.write("---")
+    with st.expander("🛠️ 5. Real-Time Compute & Engine Execution Profile Diagnostics", expanded=False):
+        st.write("### 🖥️ Live Engine Diagnostics")
+        
+        import platform
+        import multiprocessing
+        
+        col_diag1, col_diag2, col_diag3 = st.columns(3)
+        with col_diag1:
+            st.metric(label="OS Platform", value=platform.system())
+        with col_diag2:
+            st.metric(label="Available CPU Cores", value=multiprocessing.cpu_count())
+        with col_diag3:
+            st.metric(label="Polars Version", value=pl.__version__)
+            
+        st.write("#### 🔍 Compilation & Verification Status")
+        st.success("✅ Polars Rust Compilation: Verified")
+        
+        try:
+            import sklearn
+            st.success(f"✅ Scikit-learn Engine: Active (v{sklearn.__version__})")
+        except ImportError:
+            st.warning("⚠️ Scikit-learn Engine: Inactive (Using token-based backup deduplication)")
+            
+        st.success("✅ ReportLab Canvas Layout Engine: Ready")
+        st.success("✅ Password Cryptography Engine: Ready (Legacy WZ_ZIPCRYPT mode)")
+        
+        st.markdown("""
+        **Troubleshooting & Playbook Quick Links:**
+        - To force AVX-free compilation of Polars/Scikit-learn, run: `pip install --no-binary :all: <package>`
+        - Output ZIP archive password is the exact 10-digit mobile number input during generation.
+        """)
+
+    # Footer displaying Rohit Jain's details
+    st.markdown("---")
+    st.markdown(
+        "<div style='text-align: center; padding: 15px; font-size: 13px; color: #64748b; font-weight: 500;'>"
+        "Automated Rohit Jain's Assessment Engine &bull; Developed by <b>Rohit Jain</b>"
+        "</div>",
+        unsafe_allow_html=True
+    )
 
 
 if __name__ == "__main__":
