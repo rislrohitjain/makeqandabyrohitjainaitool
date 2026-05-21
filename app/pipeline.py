@@ -247,8 +247,14 @@ class QAPipeline:
                 deduped_qa.append(new_item)
             else:
                 # If absolute zero questions could be generated from text, fallback to a generic text-based question
-                generic_ans = all_sentences[0] if all_sentences else "No text found in document."
-                generic_q = "What is the main topic discussed in the beginning of the text?"
+                if all_sentences:
+                    words = all_sentences[0].split()
+                    mid = max(1, len(words) // 2)
+                    generic_q = " ".join(words[:mid]) + " ____"
+                    generic_ans = " ".join(words[mid:])
+                else:
+                    generic_q = "No readable text found ____"
+                    generic_ans = "in the provided document."
                 
                 distractors = self._generate_plausible_distractors(generic_ans, all_sentences, distractor_count, difficulty_level)
                 options_list = [generic_ans] + distractors
@@ -406,11 +412,11 @@ class QAPipeline:
                 first_sent = sentences[0]
                 if len(first_sent) > 30:
                     words = first_sent.split()
-                    first_few = " ".join(words[:4])
-                    question = f"What is the significance of '{first_few}...'?"
+                    mid = max(1, len(words) // 2)
+                    question = " ".join(words[:mid]) + " ____"
                     chunk_qa.append({
                         "question": question,
-                        "answer": first_sent,
+                        "answer": " ".join(words[mid:]),
                         "section": section_name
                     })
             
@@ -423,11 +429,11 @@ class QAPipeline:
                 for s in sentences:
                     if len(s) > 30 and len(qa_pairs) < 3:
                         words = s.split()
-                        first_few = " ".join(words[:5])
-                        question = f"What is discussed regarding '{first_few}...'?"
+                        mid = max(1, len(words) // 2)
+                        question = " ".join(words[:mid]) + " ____"
                         qa_pairs.append({
                             "question": question,
-                            "answer": s,
+                            "answer": " ".join(words[mid:]),
                             "section": section_name
                         })
                 
