@@ -1,0 +1,248 @@
+{
+	"info": {
+		"_postman_id": "bfd91e6b-e522-4467-bc18-477d9c6dfb03",
+		"name": "Automated Rohit Jain's Q&A Generator API Collection",
+		"description": "Postman collection for Automated Rohit Jain's Question Paper & Answer Key Assessment Engine. Contains requests for asynchronous and synchronous generation flows, job status tracking, file downloads, and developer profiles.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Developer Info & Flow",
+			"item": [
+				{
+					"name": "Get Developer Profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/developer",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"developer"
+							]
+						},
+						"description": "Retrieves developer credentials (Rohit Jain, Sr. Software Engineer, BCA, MCA) and portfolio URLs."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Project Flowchart Steps",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/flowchart",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"flowchart"
+							]
+						},
+						"description": "Retrieves step-by-step layout definitions for the 5-phase project execution flowchart."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Q&A Generation",
+			"item": [
+				{
+					"name": "Submit Q&A Generation (Asynchronous)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "mobile_number",
+									"value": "9876543210",
+									"description": "Exactly 10 digits. Used as password PIN for ZIP encryption.",
+									"type": "text"
+								},
+								{
+									"key": "exam_title",
+									"value": "Robotic System Verification",
+									"description": "Title of the exam (Maximum 10 words).",
+									"type": "text"
+								},
+								{
+									"key": "distractor_count",
+									"value": "4",
+									"description": "Number of distractor options (choices).",
+									"type": "text"
+								},
+								{
+									"key": "set_count",
+									"value": "1",
+									"description": "Number of question paper sets to split.",
+									"type": "text"
+								},
+								{
+									"key": "questions_per_set",
+									"value": "5",
+									"description": "Number of questions to compile inside each set.",
+									"type": "text"
+								},
+								{
+									"key": "files",
+									"description": "Upload document resources (Allowed: PDF, DOCX, TXT. Maximum 5 files).",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/generate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"generate"
+							]
+						},
+						"description": "Submits documents and config parameters to start background processing. Returns a unique session_id immediately. Use session_id to check status at '/api/status/{session_id}'."
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Q&A Generation (Synchronous)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "mobile_number",
+									"value": "9876543210",
+									"type": "text"
+								},
+								{
+									"key": "exam_title",
+									"value": "Robotic System Verification",
+									"type": "text"
+								},
+								{
+									"key": "distractor_count",
+									"value": "4",
+									"type": "text"
+								},
+								{
+									"key": "set_count",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "questions_per_set",
+									"value": "5",
+									"type": "text"
+								},
+								{
+									"key": "files",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/generate-sync",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"generate-sync"
+							]
+						},
+						"description": "Submits files and generates Q&A blocks synchronously, keeping connection open until results are available. Returns final list of questions and download links."
+					},
+					"response": []
+				},
+				{
+					"name": "Check Session Status & Telemetry",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/status/:session_id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"status",
+								":session_id"
+							],
+							"variable": [
+								{
+									"key": "session_id",
+									"value": "8f8e21a8",
+									"description": "8-character session ID returned by the async generate endpoint."
+								}
+							]
+						},
+						"description": "Retrieve status, percentage progress, subagent matrix states, and terminal logs for a session."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Downloads",
+			"item": [
+				{
+					"name": "Download Output File (ZIP, Excel, PDF)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/download/:mobile_number/:session_id/:filename",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"download",
+								":mobile_number",
+								":session_id",
+								":filename"
+							],
+							"variable": [
+								{
+									"key": "mobile_number",
+									"value": "9876543210"
+								},
+								{
+									"key": "session_id",
+									"value": "8f8e21a8"
+								},
+								{
+									"key": "filename",
+									"value": "output.zip",
+									"description": "Available files: 'output.zip', 'questions.xlsx', or Set PDFs like 'Set_A.pdf'."
+								}
+							]
+						},
+						"description": "Downloads the generated password-protected ZIP archive, standard Excel sheet, or specific set Question Paper PDF."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8000",
+			"type": "string"
+		}
+	]
+}
