@@ -147,9 +147,94 @@ h1, h2, h3 {
     -webkit-text-fill-color: transparent;
     font-weight: 700 !important;
 }
+
+/* 3D Developer Photo Container */
+.dev-photo-container {
+    perspective: 1000px;
+    width: 100%;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.dev-photo-card {
+    width: 200px;
+    height: 200px;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateX(8deg) rotateY(-8deg);
+    transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 
+                0 0 15px rgba(99, 102, 241, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.dev-photo-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Shine overlay */
+.dev-photo-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        135deg, 
+        rgba(255, 255, 255, 0) 0%, 
+        rgba(255, 255, 255, 0) 40%, 
+        rgba(255, 255, 255, 0.35) 50%, 
+        rgba(255, 255, 255, 0) 60%, 
+        rgba(255, 255, 255, 0) 100%
+    );
+    transform: translate(-100%, -100%);
+    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Mouse over actions */
+.dev-photo-container:hover .dev-photo-card {
+    transform: rotateX(0deg) rotateY(0deg) scale(1.06);
+    box-shadow: 0 25px 45px rgba(0, 0, 0, 0.6), 
+                0 0 30px rgba(168, 85, 247, 0.45);
+    border-color: rgba(168, 85, 247, 0.5);
+}
+
+.dev-photo-container:hover .dev-photo-card img {
+    transform: scale(1.1);
+}
+
+.dev-photo-container:hover .dev-photo-card::after {
+    transform: translate(100%, 100%);
+}
 </style>
 """
 st.markdown(css_style, unsafe_allow_html=True)
+
+
+def get_image_base64_html(photo_path):
+    import base64
+    try:
+        with open(photo_path, "rb") as image_file:
+            encoded = base64.b64encode(image_file.read()).decode("utf-8")
+        return f"""
+        <div class="dev-photo-container">
+            <div class="dev-photo-card">
+                <img src="data:image/jpeg;base64,{encoded}" alt="Rohit Jain" />
+            </div>
+        </div>
+        """
+    except Exception as e:
+        return f"<div style='color:red;'>Error loading photo: {{e}}</div>"
+
 
 
 def get_grid_html(states):
@@ -201,7 +286,7 @@ def main():
         # Display Developer Photo
         photo_path = os.path.join(os.path.dirname(__file__), "rohit_jain.jpg")
         if os.path.exists(photo_path):
-            st.image(photo_path, caption="Rohit Jain", use_container_width=True)
+            st.markdown(get_image_base64_html(photo_path), unsafe_allow_html=True)
         else:
             st.info("Photo loading...")
             
