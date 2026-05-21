@@ -66,7 +66,7 @@ class QAPipeline:
         ingestion_agent = BaseAgent("Ingestion Quality Evaluator", self.tracker)
         await ingestion_agent.transition("Processing", "Validating file sizes and uploading...")
         
-        # Enforce max 100MB limit & concurrency limit of 5 concurrent uploads
+        # Enforce max 200MB limit & concurrency limit of 5 concurrent uploads
         semaphore = asyncio.Semaphore(5)
         
         async def process_single_file(path: str) -> str:
