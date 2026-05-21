@@ -215,6 +215,102 @@ h1, h2, h3 {
 .dev-photo-container:hover .dev-photo-card::after {
     transform: translate(100%, 100%);
 }
+
+/* Hindi Marquee Styles */
+.hindi-marquee-container {
+    background: rgba(17, 24, 39, 0.85);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-bottom: 25px;
+    font-size: 14px;
+    color: #e2e8f0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+}
+.hindi-marquee-container marquee {
+    display: flex;
+    align-items: center;
+}
+.hindi-marquee-container a {
+    color: #6366f1;
+    text-decoration: underline;
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+.hindi-marquee-container a:hover {
+    color: #a855f7 !important;
+}
+
+/* Flowchart Styles */
+.flowchart-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
+    gap: 0;
+}
+
+.flow-step {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 450px;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 12px;
+    padding: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.flow-step:hover {
+    transform: translateY(-2px);
+    border-color: rgba(168, 85, 247, 0.5);
+    box-shadow: 0 6px 15px rgba(168, 85, 247, 0.2);
+}
+
+.step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 14px;
+    margin-right: 15px;
+    flex-shrink: 0;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+}
+
+.step-content {
+    flex-grow: 1;
+}
+
+.step-content h4 {
+    margin: 0 0 5px 0;
+    font-size: 15px;
+    color: #f1f5f9;
+    font-weight: 600;
+}
+
+.step-content p {
+    margin: 0;
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.flow-connector {
+    width: 2px;
+    height: 25px;
+    background: linear-gradient(180deg, #6366f1 0%, #a855f7 100%);
+    opacity: 0.6;
+}
 </style>
 """
 st.markdown(css_style, unsafe_allow_html=True)
@@ -271,6 +367,55 @@ def show_contact_popup():
     st.write("Feel free to reach out for enterprise AI workflows, automated LLM systems, or optimized full-stack microservices.")
 
 
+@st.dialog("📊 Project Execution Flow")
+def show_flowchart_popup():
+    st.markdown("""
+    <div class="flowchart-container">
+        <div class="flow-step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+                <h4>Document Ingestion</h4>
+                <p>Upload source files (PDF, DOCX, TXT, or ZIP up to 200MB) with secure session isolation.</p>
+            </div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+                <h4>Contextual Text Chunking</h4>
+                <p>Cleans extracted text, splits it into semantic chunks, and builds dynamic study structures.</p>
+            </div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+                <h4>Multi-Agent Item Synthesis</h4>
+                <p>Specialist subagents parallelly generate question stems, option alternatives, and correct keys.</p>
+            </div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+                <h4>De-duplication & Refinement</h4>
+                <p>Removes highly overlapping items via Cosine Similarity check and formats outputs.</p>
+            </div>
+        </div>
+        <div class="flow-connector"></div>
+        <div class="flow-step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+                <h4>Secure Export compilation</h4>
+                <p>Assembles custom PDF layouts and archives everything in a password-protected ZIP envelope.</p>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    st.write("---")
+    st.info("💡 Tip: The output ZIP archive password is the exact 10-digit mobile number input during generation.")
+
+
 def main():
     # Ensure developer resume is generated
     resume_path = "storage/rohit_jain_resume.pdf"
@@ -313,6 +458,10 @@ def main():
             st.markdown("💻 **Enterprise Full-Stack Engineering** — Highly optimized data microservices and real-time dashboards.")
             st.markdown("---")
             
+        # Flow Chart Popup Button
+        if st.button("📊 Project Execution Flow", use_container_width=True):
+            show_flowchart_popup()
+            
         # Contact Info Popup Button
         if st.button("📞 Contact Info", use_container_width=True):
             show_contact_popup()
@@ -334,6 +483,19 @@ def main():
         "An AI-driven Rohit Jain's assessment engine that automates the generation of structured question papers "
         "and comprehensive evaluation keys from any source material."
     )
+    
+    # Hindi/English Educational Purpose Marquee
+    marquee_html = """
+    <div class="hindi-marquee-container">
+        <marquee behavior="scroll" direction="left" scrollamount="6" onmouseover="this.stop();" onmouseout="this.start();">
+            यह प्रोजेक्ट रोहित जैन द्वारा केवल शैक्षणिक उद्देश्यों के लिए बनाया गया है। रोहित जैन का प्रोफाइल देखने के लिए यहाँ क्लिक करें: 
+            <a href="https://rohitjain-resume.vercel.app/" target="_blank">rohitjain-resume.vercel.app</a> &bull;&nbsp; 
+            This project is created by Rohit Jain for educational purposes only. To explore the digital profile of Rohit Jain, visit: 
+            <a href="https://rohitjain-resume.vercel.app/" target="_blank">rohitjain-resume.vercel.app</a>
+        </marquee>
+    </div>
+    """
+    st.markdown(marquee_html, unsafe_allow_html=True)
     
     # Session States
     if "tracker_states" not in st.session_state:
