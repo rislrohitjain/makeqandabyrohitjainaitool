@@ -1,5 +1,5 @@
 ---
-title: Antigravity Q&A Generator
+title: Rohit Jain Q&A Generator
 emoji: 🚀
 colorFrom: indigo
 colorTo: purple
@@ -10,7 +10,7 @@ pinned: false
 
 # Antigravity 2.0 Q&A Generator
 
-This project is a local, open-source Q&A pair generator. It allows you to parse PDF, DOCX, and TXT files, process them using local/open-source pipelines, and generate high-quality questions and answers.
+This project is Rohit Jain's a local, open-source Q&A pair generator. It allows you to parse PDF, DOCX, and TXT files, process them using local/open-source pipelines, and generate high-quality questions and answers.
 
 ## Project Structure
 

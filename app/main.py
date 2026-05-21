@@ -670,7 +670,7 @@ def main():
         if "uploaded_files" in st.session_state.validation_errors:
             st.error(f"❌ {st.session_state.validation_errors['uploaded_files']}")
             
-        submit_btn = st.form_submit_button("🤖 Deploy Robotic Ingestion & Q&A Synthesis Engine")
+        submit_btn = st.form_submit_button("🤖 Generate Question and Answer")
         st.markdown('</div>', unsafe_allow_html=True)
 
     # Collapsible Status Grid
